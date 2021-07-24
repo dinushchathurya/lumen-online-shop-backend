@@ -30,4 +30,24 @@ class User extends Model implements AuthenticatableContract, AuthorizableContrac
     protected $hidden = [
         'password',
     ];
+
+    public function products()
+    {
+        return $this->hasMany(Product::class, 'created_by');
+    }
+
+    public function orders()
+    {
+        return $this->hasMany(Order::class, 'user_id');
+    }
+
+    public function shippingAddresses()
+    {
+        return $this->hasMany(ShippingAddress::class, 'user_id');
+    }
+    
+    public function shoppingCart()
+    {
+        return $this->hasMany(ShoppingCart::class, 'user_id');
+    }
 }
