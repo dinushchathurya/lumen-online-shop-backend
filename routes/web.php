@@ -23,6 +23,11 @@ $router->group(['prefix' => 'api'], function () use ($router) {
         $router->get('/{id}', 'CategoriesController@show');
     });
 
+    $router->group(['prefix' => 'brand'], function () use ($router) {
+        $router->get('/', 'BrandsController@index');
+        $router->get('/{id}', 'BrandsController@show');
+    });
+
     $router->group(['middleware' => 'auth:api'], function () use ($router) {
         $router->get('/profile', 'Auth\\LoginController@userDetails');
         $router->get('/logout', 'Auth\\LoginController@logout');
@@ -32,6 +37,12 @@ $router->group(['prefix' => 'api'], function () use ($router) {
             $router->post('/', 'CategoriesController@store');
             $router->put('/{id}', 'CategoriesController@update');
             $router->delete('/{id}', 'CategoriesController@destroy');
+        });
+
+        $router->group(['prefix' => 'brand'], function () use ($router) {
+            $router->post('/', 'BrandsController@store');
+            $router->put('/{id}', 'BrandsController@update');
+            $router->delete('/{id}', 'BrandsController@destroy');
         });
     });
 });
