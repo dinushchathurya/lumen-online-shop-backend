@@ -53,7 +53,10 @@ class CategoriesController extends Controller
 
     public function show($id)
     {
-
+        $category = Category::with('parent', 'features')->findOrFail($id);
+        return response()->json([
+            'category' => $category
+        ], 200);
     }
 
     public function update(Request $request, $id)
@@ -78,5 +81,18 @@ class CategoriesController extends Controller
 
         $categories = $query->paginate(10);
         return $categories;
+    }
+
+    protected function insertFeatures($request, $category) {
+        if($request->has('features')) {
+            foreach ($request->input('features') as $feature) {
+                if(!empty($feature["field_title"])) {
+                    $categoryFeature = new CategoryFeature();
+                    $categoryFeature->field_title = $feature["field_title"];
+                    $categoryFeature->field_type = $feature["field_type"];
+                    $category->features()->save($categoryFeature);
+                }
+            }
+        }
     }
 }
