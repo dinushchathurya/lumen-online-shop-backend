@@ -60,4 +60,10 @@ class User extends Model implements JWTSubject, AuthenticatableContract, Authori
     {
         return [];
     }
+
+    protected $appends = array('create_date');
+    public function getCreateDateAttribute()
+    {
+        return $this->created_at ? date('Y-m-d', strtotime($this->created_at)) : "";
+    }
 }
