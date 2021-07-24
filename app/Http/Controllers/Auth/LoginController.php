@@ -26,7 +26,7 @@ class LoginController extends Controller
 
         if($validator->fails()) {
             return response()->json([
-                'success' => 0, 
+                'success' => false, 
                 'message' => 'Please fix these errors', 
                 'errors' => $validator->errors()
             ], 500);
@@ -36,23 +36,23 @@ class LoginController extends Controller
             $token = $this->jwt->attempt($request->only('email', 'password'));
             if(!$token) {
                 return response()->json([
-                    'success' => 0, 
+                    'success' => false, 
                     'message' => 'user not found'
                 ], 404);
             }
         } catch (\Tymon\JWTAuth\Exceptions\TokenExpiredException $e) {
             return response()->json([
-                'success' => 0, 
+                'success' => false, 
                 'message' => 'token expired'
             ], 500);
         } catch (\Tymon\JWTAuth\Exceptions\TokenInvalidException $e) {
             return response()->json([
-                'success' => 0, 
+                'success' => false, 
                 'message' => 'token invalid'
             ], 500);
         } catch (\Tymon\JWTAuth\Exceptions\JWTException $e) {
             return response()->json([
-                'success' => 0, 
+                'success' => false, 
                 'message' => 'unknown error'
             ], 500);
         }
@@ -60,9 +60,9 @@ class LoginController extends Controller
         // if everything ok
         $user = Auth::user();
         return response()->json([
-            'success' => 1,
-            'access_token' => $token,
-            'user' => $user
+            'success' => true,
+            'user' => $user,
+            'access_token' => $token
         ]);
     }
 
@@ -80,7 +80,7 @@ class LoginController extends Controller
         $this->jwt->setToken($token)->invalidate();
         \auth()->logout();
         return response()->json([
-            'success' => 1,
+            'success' => true,
             'message' => 'Signed out successfully!'
         ]);
     }
