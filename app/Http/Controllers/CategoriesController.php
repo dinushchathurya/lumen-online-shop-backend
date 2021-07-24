@@ -61,7 +61,31 @@ class CategoriesController extends Controller
 
     public function update(Request $request, $id)
     {
+        $category = Category::with('parent')->findOrFail($id);
+        $validator = Validator::make($request->only('title'), [
+            'title' => 'required'
+        ]);
 
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false, 
+                'message' => 'Please fix these errors', 
+                'errors' => $validator->errors()
+            ], 500);
+        }
+
+        $category->title = $request->input('title');
+        $category->description = $request->input('description');
+        $category->parent_id = $request->input('parent_id') != '' ? $request->input('parent_id') : null;
+        $category->featured = $request->input('featured');
+        $category->save();
+        $category->features()->delete();
+        $this->insertFeatures($request, $category);
+        return response()->json([
+            'success' => true, 
+            'message' => 'Updated successfully', 
+            'category' => $category
+        ], 200);
     }
 
     public function destroy($id)
