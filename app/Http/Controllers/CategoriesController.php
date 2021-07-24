@@ -98,6 +98,21 @@ class CategoriesController extends Controller
         ], 200);
     }
 
+    public function getCategoryHtmlTree(Request $request, $parent_id = null)
+    {
+        $query = $categories = Category::where('parent_id', $parent_id);
+        if($request->except_id) {
+            $query->where('id', '!=', $request->except_id)->get();
+        }
+        $categories = $query->get();
+        foreach ($categories as $category) {
+            echo '<option value="' . $category->id . '">' . str_repeat('-', Category::getCategoryLevel($category->id)) . ' ' .  $category->title . '</option>';
+            if ($category->children->count() > 0) {
+                $this->getCategoryHtmlTree($request, $category->id);
+            }
+        }
+    }
+
     protected function filterAndResponse(Request $request, \Illuminate\Database\Eloquent\Builder $query)
     {
         if ($request->filter_by_id) {
