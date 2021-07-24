@@ -90,7 +90,12 @@ class CategoriesController extends Controller
 
     public function destroy($id)
     {
-
+        $category = Category::findOrFail($id);
+        $category->delete();
+        return response()->json([
+            'success' => 1, 
+            'message' => 'Category deleted successfully'
+        ], 200);
     }
 
     protected function filterAndResponse(Request $request, \Illuminate\Database\Eloquent\Builder $query)
