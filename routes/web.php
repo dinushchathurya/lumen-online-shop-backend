@@ -33,6 +33,11 @@ $router->group(['prefix' => 'api'], function () use ($router) {
         $router->get('/{id}', 'ProductsController@show');
     });
 
+    $router->group(['prefix' => 'user'], function () use ($router) {
+        $router->get('/', 'UsersController@index');
+        $router->get('/{id}', 'UsersController@show');
+    });
+
     $router->group(['middleware' => 'auth:api'], function () use ($router) {
 
         $router->get('/profile', 'Auth\\LoginController@userDetails');
@@ -56,6 +61,12 @@ $router->group(['prefix' => 'api'], function () use ($router) {
             $router->put('/{id}', 'ProductsController@update');
             $router->delete('/delete-image/{id}', 'ProductsController@destroyImage');
             $router->delete('/{id}', 'ProductsController@destroy');
+        });
+
+        $router->group(['prefix' => 'user'], function () use ($router) {
+            $router->post('/', 'UsersController@store');
+            $router->put('/{id}', 'UsersController@update');
+            $router->delete('/{id}', 'UsersController@destroy');
         });
 
     });
