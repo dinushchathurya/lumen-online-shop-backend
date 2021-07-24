@@ -5,6 +5,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Category extends Model
 {
+    use Helpers;
     
     public function features()
     {
@@ -35,6 +36,24 @@ class Category extends Model
         } else {
             return $level;
         }
+    }
+
+    public static function getCategoryMenuTree($parent_id = null, &$output = [])
+    {
+        $categories = self::where('parent_id', $parent_id)->get();
+        foreach ($categories as $category) {
+            $arr = [
+                'id' => $category->id,
+                'title' => $category->title,
+                'path' => ($category->children->count() > 0 ? '#' : '/' . $category->id . '/' . self::slugify($category->title)),
+                'children' => []
+            ];
+            if($category->children->count() > 0) {
+                self::getCategoryMenuTree($category->id, $arr['children']);
+            }
+            $output[] = $arr;
+        }
+        return $output;
     }
 
 }
