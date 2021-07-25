@@ -17,9 +17,7 @@ class UsersController extends Controller
     {
         $users = $this->filterAndResponse($request);
 
-        return response()->json([
-            'users' => $users
-        ], 200);
+        return response()->json(['users' => $users], 200);
     }
 
     public function store(Request $request)
@@ -27,29 +25,21 @@ class UsersController extends Controller
         $validator = $this->getValidator($request);
 
         if ($validator->fails()) {
-            return response()->json([
-                'success' => false, 
-                'message' => 'Please fix these errors', 
-                'errors' => $validator->errors()
-            ], 500);
+            return response()->json(['success' => 0, 'message' => 'Please fix these errors', 'errors' => $validator->errors()], 500);
         }
 
         $bundle = $request->except('password_confirmation');
+
         $bundle['password'] = app('hash')->make($request->input('password'));
+
         $user = User::create($bundle);
 
-        return response()->json([
-            'success' => true, 
-            'message' => 'Created successfully', 
-            'user' => $user
-        ], 201);
+        return response()->json(['success' => 1, 'message' => 'Created successfully', 'user' => $user], 201);
     }
 
     public function show($id)
     {
-        return response()->json([
-            'user' => User::findOrFail($id)
-        ], 200);
+        return response()->json(['user' => User::findOrFail($id)], 200);
     }
 
     public function update(Request $request, $id)
@@ -59,11 +49,7 @@ class UsersController extends Controller
         $validator = $this->getValidator($request, $id);
 
         if ($validator->fails()) {
-            return response()->json([
-                'success' => false, 
-                'message' => 'Please fix these errors', 
-                'errors' => $validator->errors()
-            ], 500);
+            return response()->json(['success' => 0, 'message' => 'Please fix these errors', 'errors' => $validator->errors()], 500);
         }
 
         $user->name = $request->input('name');
@@ -76,21 +62,18 @@ class UsersController extends Controller
 
         $user->save();
 
-        return response()->json([
-            'success' => true, 
-            'message' => 'Updated successfully', 
-            'user' => $user
-        ], 200);
+        return response()->json(['success' => 1, 'message' => 'Updated successfully', 'user' => $user], 200);
     }
 
     public function destroy($id)
     {
-        User::findOrFail($id)->delete();
+        $user = User::with('orders')->findOrFail($id);
 
-        return response()->json([
-            'success' => true, 
-            'message' => 'Deleted successfully'
-        ], 200);
+        if($user->orders->count() > 0) {
+            return response()->json(['success' => 0, 'message' => 'The user has orders attached to it, delete them first'], 500);
+        }
+
+        return response()->json(['success' => 1, 'message' => 'Deleted successfully'], 200);
     }
 
     /**
@@ -133,6 +116,7 @@ class UsersController extends Controller
         }
 
         $validator = Validator::make($request->all(), $validate_rules);
+
         return $validator;
     }
 }

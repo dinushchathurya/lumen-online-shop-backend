@@ -5,14 +5,13 @@ namespace App\Models;
 use Illuminate\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\Access\Authorizable as AuthorizableContract;
 use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Laravel\Lumen\Auth\Authorizable;
 use Tymon\JWTAuth\Contracts\JWTSubject;
 
 class User extends Model implements JWTSubject, AuthenticatableContract, AuthorizableContract
 {
-    use Authenticatable, Authorizable, HasFactory;
+    use Authenticatable, Authorizable;
 
     /**
      * The attributes that are mass assignable.
@@ -20,7 +19,7 @@ class User extends Model implements JWTSubject, AuthenticatableContract, Authori
      * @var array
      */
     protected $fillable = [
-        'name', 'email',
+        'name', 'email', 'is_super_admin', 'password'
     ];
 
     /**
@@ -31,6 +30,8 @@ class User extends Model implements JWTSubject, AuthenticatableContract, Authori
     protected $hidden = [
         'password',
     ];
+
+    protected $appends = array('create_date');
 
     public function products()
     {
@@ -46,7 +47,7 @@ class User extends Model implements JWTSubject, AuthenticatableContract, Authori
     {
         return $this->hasMany(ShippingAddress::class, 'user_id');
     }
-    
+
     public function shoppingCart()
     {
         return $this->hasMany(ShoppingCart::class, 'user_id');
@@ -56,12 +57,12 @@ class User extends Model implements JWTSubject, AuthenticatableContract, Authori
     {
         return $this->getKey();
     }
+
     public function getJWTCustomClaims()
     {
         return [];
     }
 
-    protected $appends = array('create_date');
     public function getCreateDateAttribute()
     {
         return $this->created_at ? date('Y-m-d', strtotime($this->created_at)) : "";

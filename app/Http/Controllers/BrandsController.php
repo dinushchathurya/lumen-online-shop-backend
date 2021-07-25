@@ -3,11 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Brand;
+use App\Traits\SearchApi;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class BrandsController extends Controller
 {
+    use SearchApi;
+
     public function __construct()
     {
         $this->middleware('super_admin_check:store-update-destroy');
@@ -17,9 +20,7 @@ class BrandsController extends Controller
     {
         $brands = $this->filterAndResponse($request);
 
-        return response()->json([
-            'brands' => $brands
-        ], 200);
+        return response()->json(['brands' => $brands], 200);
     }
 
     public function store(Request $request)
@@ -29,29 +30,19 @@ class BrandsController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'success' => false, 
-                'message' => 'Please fix these errors', 
-                'errors' => $validator->errors()
-            ], 500);
+            return response()->json(['success' => 0, 'message' => 'Please fix these errors', 'errors' => $validator->errors()], 500);
         }
 
         $brand = Brand::create($request->all());
 
-        return response()->json([
-            'success' => true, 
-            'message' => 'Created successfully', 
-            'brand' => $brand
-        ], 201);
+        return response()->json(['success' => 1, 'message' => 'Created successfully', 'brand' => $brand], 201);
     }
 
     public function show($id)
     {
         $brand = Brand::findOrFail($id);
 
-        return response()->json([
-            'brand' => $brand
-        ], 200);
+        return response()->json(['brand' => $brand], 200);
     }
 
     public function update(Request $request, $id)
@@ -63,33 +54,30 @@ class BrandsController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'success' => false, 
-                'message' => 'Please fix these errors', 
-                'errors' => $validator->errors()
-            ], 500);
+            return response()->json(['success' => 0, 'message' => 'Please fix these errors', 'errors' => $validator->errors()], 500);
         }
 
         $brand->title = $request->input('title');
+
         $brand->save();
 
-        return response()->json([
-            'success' => true, 
-            'message' => 'Brand updated successfully', 
-            'brand' => $brand
-        ], 200);
+        return response()->json(['success' => 1, 'message' => 'Updated successfully', 'brand' => $brand], 200);
     }
 
     public function destroy($id)
     {
         $brand = Brand::findOrFail($id);
+
         $brand->delete();
 
-        return response()->json([
-            'success' => true, 
-            'message' => 'Deleted successfully'
-        ], 200);
+        return response()->json(['success' => 1, 'message' => 'Deleted successfully'], 200);
     }
+
+    public function brandsByCategory(Request $request)
+    {
+        return $this->getBrandsByCategory($request->category_id);
+    }
+
 
     /**
      * @param Request $request
@@ -111,6 +99,7 @@ class BrandsController extends Controller
         }
 
         $brands = $query->paginate(10);
+
         return $brands;
     }
 }

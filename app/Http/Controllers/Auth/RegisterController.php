@@ -1,6 +1,8 @@
 <?php
 
+
 namespace App\Http\Controllers\Auth;
+
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
@@ -26,14 +28,11 @@ class RegisterController extends Controller
         ]);
 
         if($validator->fails()) {
-            return response()->json([
-                'success' => false, 
-                'message' => 'Please fix these errors', 
-                'errors' => $validator->errors()
-            ], 500);
+            return response()->json(['success' => 0, 'message' => 'Please fix these errors', 'errors' => $validator->errors()], 500);
         }
 
         try {
+
             $user = new User();
             $user->name = $request->input('name');
             $user->email = $request->input('email');
@@ -43,17 +42,17 @@ class RegisterController extends Controller
             $user->save();
 
             $token = auth()->tokenById($user->id);
+
             return response()->json([
-                'success' => true,
+                'success' => 1,
                 'message' => 'User Registration success!',
                 'access_token' => $token,
                 'user' => $user
             ]);
+
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false, 
-                'message' => 'User Registration Failed!'
-            ], 409);
+            //return error message
+            return response()->json(['success' => 0, 'message' => 'User Registration Failed!'], 409);
         }
     }
 }

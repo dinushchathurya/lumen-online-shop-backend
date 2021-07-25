@@ -1,22 +1,25 @@
 <?php
 
+
 namespace App\Http\Controllers;
+
 
 use App\Models\Product;
 use App\Models\ProductFeature;
 use App\Models\ProductGallery;
 use App\Traits\Helpers;
 use App\Traits\HomeApi;
+use App\Traits\SearchApi;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class ProductsController extends Controller
 {
-    use Helpers, HomeApi;
+    use Helpers, HomeApi, SearchApi;
 
     public function __construct()
     {
-        $this->middleware('super_admin_check:store-update-destroy-destroyImage');
+        $this->middleware('super_admin_check:store-update-destroy-destroyImage-duplicateProduct');
     }
 
     public function index(Request $request)
@@ -57,7 +60,9 @@ class ProductsController extends Controller
             $product->save();
 
             // save features if any
-            $this->insertFeatures($request, $product);
+            if($request->has('features')) {
+                $this->insertFeatures($request->input('features'), $product);
+            }
 
             // upload images
             $this->uploadImages($request, $product);
@@ -72,7 +77,7 @@ class ProductsController extends Controller
 
     public function show($id)
     {
-        $product = Product::with('features', 'gallery')->findOrFail($id);
+        $product = Product::with('features', 'gallery', 'brand', 'category')->findOrFail($id);
 
         return response()->json(['product' => $product], 200);
     }
@@ -104,7 +109,9 @@ class ProductsController extends Controller
                 $product->features()->delete();
             }
 
-            $this->insertFeatures($request, $product);
+            if($request->has('features')) {
+                $this->insertFeatures($request->input('features'), $product);
+            }
 
             // upload images
             $this->uploadImages($request, $product);
@@ -120,6 +127,11 @@ class ProductsController extends Controller
     {
         try {
             $product = Product::with('gallery')->findOrFail($id);
+
+            // check if this product have orders attached to it then reject delete
+            if($product->orderDetails->count() > 0) {
+                throw new \Exception("Can't delete the product as there already orders attached to it");
+            }
 
             foreach ($product->gallery as $gallery) {
                 if(!empty($gallery->image)) {
@@ -158,6 +170,77 @@ class ProductsController extends Controller
         } catch (\Exception $e) {
             return response()->json(['success' => 0, 'message' => $e->getMessage()], 500);
         }
+    }
+
+    public function duplicateProduct($id)
+    {
+        $product = Product::find($id);
+
+        $features = $product->features;
+
+        $gallery = $product->gallery;
+
+        $newProduct = $product->replicate()->fill([
+            'product_code' => ''
+        ]);
+
+        $newProduct->save();
+
+        if($features->count() > 0) {
+            $featuresArr = [];
+            foreach ($features as $feature) {
+                $featuresArr[$feature->field_id] = $feature->field_value;
+            }
+
+            $this->insertFeatures($featuresArr, $newProduct);
+        }
+
+        if($gallery->count() > 0) {
+            $this->createProductUploadDirs($newProduct->id, $this->imagesSizes);
+
+            foreach ($gallery as $gal) {
+                if(file_exists(base_path('public').'/uploads/' . $gal->product_id . '/' . $gal->image)) {
+                    @copy(base_path('public').'/uploads/' . $gal->product_id . '/' . $gal->image, base_path('public').'/uploads/' . $newProduct->id . '/' . $gal->image);
+
+                    $productGallery = new ProductGallery();
+                    $productGallery->image = $gal->image;
+
+                    $product->gallery()->save($productGallery);
+
+                    // start resize images
+                    foreach ($this->imagesSizes as $dirName => $imagesSize) {
+                        $this->resizeImage(base_path('public').'/uploads/' . $newProduct->id . '/' . $gal->image, base_path('public').'/uploads/' . $newProduct->id . '/' . $dirName . '/' . $gal->image, $imagesSize['width'], $imagesSize['height']);
+                    }
+                }
+            }
+        }
+
+        return response()->json(['success' => 1, 'message' => 'Product Duplicated successfully', 'product' => $newProduct]);
+    }
+
+    public function sliderProducts()
+    {
+        return $this->getSliderProducts();
+    }
+
+    public function latestProducts()
+    {
+        return $this->getLatestProducts();
+    }
+
+    public function featuredProducts()
+    {
+        return $this->getFeaturedProducts();
+    }
+
+    public function searchProducts(Request $request)
+    {
+        return $this->getProductsForSearch($request->toArray());
+    }
+
+    public function productsByIds(Request $request)
+    {
+        return $this->getProductsByIds(explode(",", $request->input("ids")));
     }
 
     /**
@@ -201,16 +284,14 @@ class ProductsController extends Controller
         }
     }
 
-    protected function insertFeatures($request, $product) {
-        if($request->has('features')) {
-            foreach ($request->input('features') as $id => $feature_value) {
-                if(!empty($feature_value)) {
-                    $productFeature = new ProductFeature();
-                    $productFeature->field_id = $id;
-                    $productFeature->field_value = $feature_value;
+    protected function insertFeatures($features, $product) {
+        foreach ($features as $id => $feature_value) {
+            if(!empty($feature_value)) {
+                $productFeature = new ProductFeature();
+                $productFeature->field_id = $id;
+                $productFeature->field_value = $feature_value;
 
-                    $product->features()->save($productFeature);
-                }
+                $product->features()->save($productFeature);
             }
         }
     }
